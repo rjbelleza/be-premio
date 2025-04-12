@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -24,6 +25,7 @@ class AuthController extends Controller
             ]);
         }
 
+        // Create token with role-based abilities
         $token = $user->createToken('auth_token', [$user->role])->plainTextToken;
     
         return response()->json([
@@ -32,6 +34,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'birthdate' => $user->birthdate,
                 'role' => $user->role,
             ]
         ]);
@@ -39,36 +42,66 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'birthdate' => 'date',
+            'birthdate' => 'required|date|', 
         ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'user', // Default role
-            'birthdate' => 'date',
-        ]);
-
-        return response()->json([
-            'token' => $user->createToken('auth_token')->plainTextToken,
-            'user' => $user
-        ]);
+    
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'birthdate' => $validated['birthdate'], 
+                'role' => 'user',
+            ]);
+    
+            $token = $user->createToken('auth_token', ['user'])->plainTextToken;
+    
+            return response()->json([
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'birthdate' => $user->birthdate, 
+                    'role' => $user->role,
+                ]
+            ], 201);
+    
+        } catch (\Exception $e) {
+            Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Registration failed. Please try again.'
+            ], 500);
+        }
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        
-        return response()->json(['message' => 'Logged out successfully']);
+        try {
+            $request->user()->currentAccessToken()->delete();
+            return response()->json([
+                'message' => 'Logged out successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Logout error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Logout failed'
+            ], 500);
+        }
     }
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'id' => $request->user()->id,
+            'name' => $request->user()->name,
+            'email' => $request->user()->email,
+            'birthdate' => $request->user()->birthdate,
+            'role' => $request->user()->role,
+        ]);
     }
 }
