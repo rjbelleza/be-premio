@@ -18,6 +18,8 @@ class UserSeeder extends Seeder
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'password' => Hash::make('admin123'),
+            'role' => 'admin',
+            'birthdate' => '1985-05-15',
             'email_verified_at' => now(),
         ]);
 
@@ -26,10 +28,9 @@ class UserSeeder extends Seeder
             'name' => 'Regular User',
             'email' => 'user@example.com',
             'password' => Hash::make('user123'),
+            'role' => 'user',
+            'birthdate' => '1985-05-15',
             'email_verified_at' => now(),
         ]);
-
-        // Create multiple test users using a factory
-        User::factory()->count(10)->create();
     }
 }
