@@ -15,10 +15,23 @@ use App\Http\Controllers\AuthController;
 |
 */
 
+// Public routes
 Route::post('/login', [AuthController::class, 'login']);
-Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
-Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
+Route::post('/register', [AuthController::class, 'register']);
 
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-    // Other admin-only routes
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Admin routes
+    Route::middleware('ability:admin')->group(function () {
+        // Admin endpoints here
+    });
+
+    // User routes
+    Route::middleware('ability:user')->group(function () {
+        // User endpoints here
+    });
+
 });
